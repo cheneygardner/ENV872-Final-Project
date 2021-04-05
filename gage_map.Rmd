@@ -1,0 +1,64 @@
+---
+title: "gage_location_map"
+author: "Cheney Gardner"
+date: "4/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+setwd("/Users/cheneygardner/Desktop/Env872/ENV872-Final-Project")
+getwd()
+if(!require(pacman)) install.packages("pacman")
+pacman::p_load(tidyverse, dplyr, lubridate, rvest, dataRetrieval, sf, leaflet, ggplot2, RColorBrewer, shiny, measurements)
+
+gage.data.nc <- read.csv("gage_data_dam_new.csv")
+
+convert<-function(coord){
+  tmp1=strsplit(coord,"°")
+  tmp2=strsplit(tmp1[[1]][2],"'")
+  tmp3=strsplit(tmp2[[1]][2],"\"")
+  dec=c(as.numeric(tmp1[[1]][1]),as.numeric(tmp2[[1]][1]),as.numeric(tmp3[[1]]))
+  c<-abs(dec[1])+dec[2]/60+dec[3]/3600
+  c<-ifelse(dec[1]<0,-c,c)
+  return(c)
+}
+
+#layer with HUC data
+huc8_sf <-  st_read('NCHUC8.copy.shp')
+
+#in popup, HUC, County, Station number
+
+gage.data.nc.clean <- gage.data.nc %>%
+  select(USGS.Station, County, HUC, Latitude, Longitude) %>%
+  mutate(Latitude = convert(Latitude), Longitude = convert(Longitude))
+
+usgs.station.map  <- leaflet(gage.data.nc.clean) %>%
+  addProviderTiles("CartoDB.Positron") %>% 
+  addMarkers(~Longitude,~Latitude,
+                    popup = ~as.character(`USGS.Station`))
+
+print(usgs.station.map)
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

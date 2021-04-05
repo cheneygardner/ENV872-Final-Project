@@ -1,0 +1,81 @@
+---
+title: "dam_map"
+author: "Cheney Gardner"
+date: "4/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+setwd("/Users/cheneygardner/Desktop/Env872/ENV872-Final-Project")
+getwd()
+if(!require(pacman)) install.packages("pacman")
+pacman::p_load(tidyverse, dplyr, lubridate, rvest, dataRetrieval, sf, leaflet, ggplot2, RColorBrewer, shiny)
+
+dam.data.nc <- read.csv("ARDamRemovalList_Figshare_Feb2021.csv") %>% filter(State == "NC")
+#2 without info, will acknowledge later
+#layer with county data
+counties_sf<- st_read('cb_2018_us_county_20m.copy.shp') %>% 
+  filter(STATEFP == 37)
+
+dam.data.nc.omit <- dam.data.nc %>%
+select(Dam_Name:State) %>%
+  na.omit()
+
+#class(dam.data.nc.omit$Year_Removed)
+#dam.data.nc.omit$Year_Removed <- as.Date(dam.data.nc.omit$Year_Removed, format = "%Y")
+#class(dam.data.nc.omit$Year_Removed)
+
+getColor <- function(dam.data.nc.omit) {
+  sapply(dam.data.nc.omit$Year_Removed, function(Year_Removed) {
+  if(Year_Removed <= 2000) {
+    "#e0f3db"
+  } else if(Year_Removed <= 2010) {
+    "#e0f3db"
+  } else {
+    "#43a2ca"
+  } })
+}
+
+icons <- awesomeIcons(
+  icon = 'ios-close',
+  iconColor = 'black',
+  library = 'ion',
+  markerColor = getColor(dam.data.nc.omit)
+)
+
+dam.map  <- leaflet(dam.data.nc.omit) %>%
+  addProviderTiles("CartoDB.Positron") %>% 
+  addMarkers(~Longitude,~Latitude,
+                    popup = ~as.character(`Dam_Name`))
+
+print(dam.map)
+
+dam.map  <- leaflet(dam.data.nc.omit) %>%
+  addProviderTiles("CartoDB.Positron") %>% 
+  addPolygons(data=counties_sf, ~Longitude,~Latitude, fill = F, weight = 2, color = "black") %>%
+  addAwesomeMarkers(~Longitude,~Latitude, icon = icons,
+                    popup = paste("Dame Name:", dam.data.nc.omit$Dam_Name, "<br>",
+                           "Year Removed:", dam.data.nc.omit$Year_Removed, "<br>",
+                           "River Restored:", dam.data.nc.omit$River))
+
+
+print(dam.map)
+
+```
+
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
